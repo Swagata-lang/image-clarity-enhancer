@@ -13,3 +13,6 @@ torch>=1.7
 torchvision
 tqdm
 yapf
+flask>=2.0.0
+gunicorn
+flask-cors
