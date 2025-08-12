@@ -6,8 +6,8 @@ import torch
 import cv2
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
-from main import app 
-application = app 
+
+
 from flask_cors import CORS
 
 # ========================
@@ -15,6 +15,8 @@ from flask_cors import CORS
 # ========================
 app = Flask(__name__)
 CORS(app, origins=["https://image-enhancer-6d278d.netlify.app"])
+
+application = app 
 
 # Settings
 app.config.update({
