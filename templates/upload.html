@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Enhancer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffccf5;
+            margin: 0;
+            padding: 20px;
+            color: #8b008b;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #ffb6e6;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(139, 0, 139, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #8b008b;
+            margin-bottom: 30px;
+        }
+        .upload-box {
+            border: 3px dashed #cc00cc;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background-color: #ffe6f7;
+        }
+        .button {
+            background-color: #cc00cc;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background-color: #990099;
+            transform: scale(1.05);
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .image-preview {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+        }
+        .image-container {
+            text-align: center;
+            margin: 10px;
+        }
+        .image-container img {
+            max-width: 350px;
+            max-height: 350px;
+            border: 3px solid #cc00cc;
+            border-radius: 10px;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #8b008b;
+        }
+        #console {
+            background-color: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 100px;
+            overflow-y: scroll;
+            margin-top: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #ffb6e6;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .modal h2 {
+            color: #8b008b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Image Enhancer ✨</h1>
+        
+        <div class="upload-box" id="dropZone">
+            <h2>Upload Your Image</h2>
+            <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" style="display: none;">
+            <button class="button" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            <p id="fileName">No file selected</p>
+            <button class="button" id="enhanceBtn" disabled>Enhance Image</button>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="image-preview">
+            <div class="image-container">
+                <h3>Original Image</h3>
+                <img id="originalImage" src="" alt="Original image will appear here">
+            </div>
+            <div class="image-container">
+                <h3>Enhanced Image</h3>
+                <img id="enhancedImage" src="" alt="Enhanced image will appear here">
+                <div id="downloadContainer" style="display: none; margin-top: 10px;">
+                    <button class="button" id="downloadBtn">Download Enhanced Image</button>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Console Log:</h3>
+        <div id="console"></div>
+    </div>
+    
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <h2>✨ Magic Complete! ✨</h2>
+            <p>Your image has been enhanced successfully!</p>
+            <button class="button" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const enhanceBtn = document.getElementById('enhanceBtn');
+        const originalImage = document.getElementById('originalImage');
+        const enhancedImage = document.getElementById('enhancedImage');
+        const fileName = document.getElementById('fileName');
+        const status = document.getElementById('status');
+        const consoleDiv = document.getElementById('console');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadContainer = document.getElementById('downloadContainer');
+        const dropZone = document.getElementById('dropZone');
+        const successModal = document.getElementById('successModal');
+
+        // Global variable to store enhanced image URL
+        let enhancedImageUrl = '';
+        
+        // Drag and drop functionality
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.backgroundColor = '#ff99dd';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.backgroundColor = '#ffe6f7';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.backgroundColor = '#ffe6f7';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        // File selection handler
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                if (!file.type.match('image.*')) {
+                    logToConsole('Error: Only image files are allowed');
+                    status.textContent = 'Error: Only image files are allowed';
+                    return;
+                }
+                
+                fileName.textContent = file.name;
+                enhanceBtn.disabled = false;
+                status.textContent = 'Ready to enhance!';
+                
+                // Preview original image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage.src = e.target.result;
+                    logToConsole('GET: Original image loaded for preview');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Enhance button handler
+        enhanceBtn.addEventListener('click', enhanceImage);
+
+        function enhanceImage() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            status.textContent = 'Enhancing your image... Please wait';
+            enhanceBtn.disabled = true;
+            logToConsole('POST: Sending image to server for enhancement');
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                logToConsole(`POST Response: ${response.status} ${response.statusText}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                logToConsole('GET: Received enhanced image from server');
+                status.textContent = 'Enhancement complete!';
+                
+                // Display enhanced image
+                enhancedImage.src = data.enhanced;
+                enhancedImageUrl = data.enhanced;
+                
+                // Show download button
+                downloadContainer.style.display = 'block';
+                
+                // Show success modal
+                successModal.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                logToConsole(`Error: ${error.message}`);
+                status.textContent = `Error: ${error.message}`;
+                enhanceBtn.disabled = false;
+            });
+        }
+
+        // Download button handler
+        downloadBtn.addEventListener('click', () => {
+            if (!enhancedImageUrl) return;
+            
+            const link = document.createElement('a');
+            link.href = enhancedImageUrl;
+            link.download = 'enhanced_' + fileInput.files[0].name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            logToConsole('Downloading enhanced image');
+        });
+
+        // Modal close function
+        function closeModal() {
+            successModal.style.display = 'none';
+        }
+
+        // Console logging function
+        function logToConsole(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
