@@ -155,5 +155,5 @@ if __name__ == '__main__':
     check_dependencies()
     
     # Start server
-    port = int(os.environ.get("PORT", 5000))  # Railway provides $PORT
+    port = int(os.environ.get("PORT", 8000))  # Railway provides $PORT
     app.run(host='0.0.0.0', port=port)
